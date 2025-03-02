@@ -1,5 +1,5 @@
 const express = require('express');
-const fs = require('fs');
+// const fs = require('fs');
 const cors = require('cors')
 
 const PORT = process.env.PORT || 8081;
@@ -20,8 +20,9 @@ app.post("/track", (req, res) => {
 });
 
 app.get("/nav", (req, res) => {
-    if(fs.existsSync("nav.json")) return res.json(JSON.parse(fs.readFileSync("nav.json", "utf8")));
-    else return res.json([
+    // if(fs.existsSync("nav.json")) return res.json(JSON.parse(fs.readFileSync("nav.json", "utf8")));
+    // else return res.json([
+    return res.json([
         {id: 1, title: "Dashboard", target: "/"},
         {
             id: 2,
@@ -61,12 +62,9 @@ app.post("/nav", (req, res) => {
     const items = req.body;
     if(!(items instanceof Array)) return res.status(400).send("Bad Request");
     else {
-        fs.writeFileSync("nav.json", JSON.stringify(items));
+        // fs.writeFileSync("nav.json", JSON.stringify(items));
         return res.status(204).send(null);
     }
 });
 
-// app.listen(PORT);
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT);
