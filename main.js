@@ -1,27 +1,11 @@
-const express = require('express');
-const fs = require('fs');
-const cors = require('cors')
-
-const PORT = process.env.PORT || 8081;
-const errorChance = 0.1;
+import { handle } from "workers-express";
+import express from "express";
 
 const app = express();
-app.use(cors());
 app.use(express.json());
-app.use((req, res, next) => {
-    if (Math.random() <= errorChance) return res.status(500).send(undefined);
-    else next();
-})
 
-app.post("/track", (req, res) => {
-   const { id, from = undefined, to = undefined } = req.body;
-   if (!id || typeof from === "undefined" || typeof to === "undefined") return res.status(400).json({error: "Bad Request"});
-   else return res.status(204).send(req.body);
-});
-
-app.get("/nav", (req, res) => {
-    if(fs.existsSync("nav.json")) return res.json(JSON.parse(fs.readFileSync("nav.json", "utf8")));
-    else return res.json([
+const errorChance = 0.1;
+let navData = [
         {id: 1, title: "Dashboard", target: "/"},
         {
             id: 2,
@@ -54,16 +38,39 @@ app.get("/nav", (req, res) => {
         },
         {id: 5, title: "About", target: "/about"},
         {id: 6, title: "Contact", target: "/contact"},
-    ]);
+    ];
+
+// Middleware to simulate random errors
+app.use((req, res, next) => {
+    if (Math.random() <= errorChance) return res.status(500).send("Internal Server Error");
+    else next();
 });
 
+// POST /track
+app.post("/track", (req, res) => {
+    const { id, from, to } = req.body;
+    if (!id || from === undefined || to === undefined) {
+        return res.status(400).json({ error: "Bad Request" });
+    }
+    return res.status(204).send();
+});
+
+// GET /nav
+app.get("/nav", (req, res) => {
+    res.json(navData);
+});
+
+// POST /nav (update the in-memory nav data)
 app.post("/nav", (req, res) => {
     const items = req.body;
-    if(!(items instanceof Array)) return res.status(400).send("Bad Request");
-    else {
-        fs.writeFileSync("nav.json", JSON.stringify(items));
-        return res.status(204).send(null);
+    if (!Array.isArray(items)) {
+        return res.status(400).json({ error: "Bad Request" });
     }
+    navData = items;
+    return res.status(204).send();
 });
 
-app.listen(PORT);
+// Export Cloudflare Worker
+export default {
+    fetch: handle(app),
+};
